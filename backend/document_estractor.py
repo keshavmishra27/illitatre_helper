@@ -7,18 +7,15 @@ import numpy as np
 
 app = Flask(__name__)
 
-# ✅ Set path for Tesseract (change if installed elsewhere)
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
-# ---------- Image Preprocessing (optional but improves accuracy) ----------
 def preprocess_image(pil_image):
-    # Convert to grayscale
+    
     img = np.array(pil_image.convert("L"))
-    # Apply threshold to remove noise
     _, thresh = cv2.threshold(img, 150, 255, cv2.THRESH_BINARY)
     return Image.fromarray(thresh)
 
-# ---------- OCR Extraction ----------
+
 def extract_text_from_image(uploaded_file):
     try:
         # Reset file pointer (important for Flask)
@@ -31,15 +28,15 @@ def extract_text_from_image(uploaded_file):
         text = pytesseract.image_to_string(img)
 
         if not text.strip():
-            return "⚠️ OCR completed, but no readable text was detected. Try a clearer image."
+            return " OCR completed, but no readable text was detected. Try a clearer image."
 
         print("Extracted Text:\n", text)  # for debugging in console
         return text
 
     except Exception as e:
-        return f"❌ Error during OCR: {e}"
+        return f" Error during OCR: {e}"
 
-# ---------- Flask Routes ----------
+
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -60,6 +57,6 @@ def upload_file():
 
     return redirect(url_for('home'))
 
-# ---------- Run Flask ----------
+
 if __name__ == '__main__':
     app.run(debug=True)
