@@ -1,0 +1,35 @@
+:root {
+  --bg: #070809;
+  --card: #0f1720;
+  --accent: #00d4ff;
+  --muted: #9aa6b2;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:linear-gradient(180deg,#071018 0%, #0a0d14 100%);font-family:Inter,system-ui,Segoe UI,Arial;color: #e6eef6}
+.wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px}
+.card{width:min(920px,96%);max-width:920px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:28px;box-shadow:0 10px 40px rgba(2,6,23,0.6);display:grid;grid-template-columns:1fr 420px;gap:20px;align-items:start}
+.left{padding:10px}
+h1{margin:0 0 12px 0;color:var(--accent);font-size:28px;letter-spacing:0.4px}
+p.lead{color:var(--muted);margin:0 0 18px 0}
+.uploader{display:flex;gap:12px;align-items:center}
+input[type=file]{background:#081018;border:1px solid rgba(255,255,255,0.04);padding:10px;border-radius:8px;color:#fff}
+button.primary{background:linear-gradient(90deg,var(--accent),#4cc2ff);border:none;color:#071018;padding:10px 16px;border-radius:10px;font-weight:600;cursor:pointer;box-shadow:0 8px 20px rgba(0,212,255,0.08)}
+button.primary:active{transform:translateY(1px)}
+.muted{color:var(--muted);font-size:13px;margin-top:8px}
+
+/* result column */
+.right{display:flex;flex-direction:column;gap:12px;align-items:center}
+.panel{width:100%;background:#071323;border-radius:12px;padding:18px;min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 8px 30px rgba(0,0,0,0.5)}
+pre#output{width:100%;height:100%;margin:0;color:#c9f9ff;background:transparent;border:none;outline:none;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;overflow:auto}
+.filename{color:var(--accent);font-weight:600;margin-bottom:8px}
+.small{font-size:13px;color:var(--muted)}
+
+/* loader canvas overlay while extracting */
+#loaderOverlay{position:fixed;left:0;top:0;width:100%;height:100%;display:none;align-items:center;justify-content:center;background:radial-gradient( circle at 50% 40%, rgba(7,12,18,0.6), rgba(3,6,10,0.9) );z-index:9999}
+canvas#threeCanvas{width:100%;height:100%;display:block}
+
+/* responsive */
+@media (max-width:880px){
+  .card{grid-template-columns:1fr;max-width:680px}
+  .right{order:-1}
+}
