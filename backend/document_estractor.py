@@ -1,62 +1,58 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, jsonify
 from PIL import Image
 import pytesseract
 import io
-import cv2
-import numpy as np
 
 app = Flask(__name__)
 
+# Set Tesseract executable path if needed (Windows)
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-
-def preprocess_image(pil_image):
-    
-    img = np.array(pil_image.convert("L"))
-    _, thresh = cv2.threshold(img, 150, 255, cv2.THRESH_BINARY)
-    return Image.fromarray(thresh)
-
+# If Tesseract is on PATH, you can comment the above line.
 
 def extract_text_from_image(uploaded_file):
+    """
+    Return OCR text (string). uploaded_file is a FileStorage.
+    """
     try:
-        # Reset file pointer (important for Flask)
         uploaded_file.seek(0)
-        img = Image.open(uploaded_file)
-
-        # Optional preprocessing (uncomment to use)
-        img = preprocess_image(img)
-
+        img_bytes = uploaded_file.read()
+        img = Image.open(io.BytesIO(img_bytes))
         text = pytesseract.image_to_string(img)
-
-        if not text.strip():
-            return " OCR completed, but no readable text was detected. Try a clearer image."
-
-        print("Extracted Text:\n", text)  # for debugging in console
-        return text
-
+        return text or ""
     except Exception as e:
-        return f" Error during OCR: {e}"
+        return f"ERROR: {e}"
 
-
-@app.route('/')
-def home():
+@app.route('/', methods=['GET'])
+def index():
     return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    # Expecting 'file' in request.files
     if 'file' not in request.files:
-        return redirect(url_for('home'))
+        return jsonify({"error": "No file uploaded."}), 400
 
     file = request.files['file']
-
     if file.filename == '':
-        return redirect(url_for('home'))
+        return jsonify({"error": "No file selected."}), 400
 
-    if file:
-        extracted_text = extract_text_from_image(file)
-        return render_template('index.html', extracted_text=extracted_text)
+    text = extract_text_from_image(file)
 
-    return redirect(url_for('home'))
+    # Try to parse key=value lines into a dict, otherwise return full text
+    parsed = {}
+    for line in text.splitlines():
+        if '=' in line:
+            key, value = line.split('=', 1)
+            k = key.strip()
+            v = value.strip()
+            if k:
+                parsed[k] = v
 
+    if parsed:
+        return jsonify(parsed)
+    else:
+        # return as single string under key 'extracted_text'
+        return jsonify({"extracted_text": text})
 
 if __name__ == '__main__':
     app.run(debug=True)
