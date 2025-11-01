@@ -1,16 +1,19 @@
+#importing libraries
 from flask import Flask, render_template, request, jsonify
 from PIL import Image
 import pytesseract
 import io
 from flask_cors import CORS
 
+#creating app
 app = Flask(__name__)
+#need backend routes to connect with frontend
 CORS(app)
 
-# Set Tesseract executable path if needed (Windows)
+# Path to tesseract executable
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-# If Tesseract is on PATH, you can comment the above line.
 
+#function to extract text from image using OCR
 def extract_text_from_image(uploaded_file):
     """
     Return OCR text (string). uploaded_file is a FileStorage.
@@ -24,13 +27,15 @@ def extract_text_from_image(uploaded_file):
     except Exception as e:
         return f"ERROR: {e}"
 
+#home page
 @app.route('/', methods=['GET'])
 def index():
     return render_template('index.html')
 
+#route to handle file upload and text extraction
 @app.route('/upload', methods=['POST'])
 def upload_file():
-    # Expecting 'file' in request.files
+    
     if 'file' not in request.files:
         return jsonify({"error": "No file uploaded."}), 400
 
@@ -40,7 +45,7 @@ def upload_file():
 
     text = extract_text_from_image(file)
 
-    # Try to parse key=value lines into a dict, otherwise return full text
+    
     parsed = {}
     for line in text.splitlines():
         if '=' in line:
@@ -53,8 +58,9 @@ def upload_file():
     if parsed:
         return jsonify(parsed)
     else:
-        # return as single string under key 'extracted_text'
+        
         return jsonify({"extracted_text": text})
 
+#run app
 if __name__ == '__main__':
     app.run(debug=True)
