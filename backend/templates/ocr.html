@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Voice Agent — OCR Extractor</title>
+
+  <style>
+    :root{
+      --bg-1: #071018;
+      --bg-2: #0b1220;
+      --glass: rgba(255,255,255,0.04);
+      --accent: #00d4ff;
+      --accent-2: #6cf0c5;
+      --muted: #98a3b3;
+      --card-radius: 18px;
+      --big: 1.2rem;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg-1),var(--bg-2));font-family:Inter,system-ui,Segoe UI,Arial;color:#e6eef6}
+    /* page layout */
+    .container{max-width:1120px;margin:0 auto;padding:88px 20px 60px}
+    /* Navbar */
+    .nav{position:fixed;left:0;top:0;right:0;height:64px;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:space-between;padding:10px 28px;z-index:40;border-bottom:1px solid rgba(255,255,255,0.02)}
+    .brand{display:flex;align-items:center;gap:12px;color:var(--accent);font-weight:700}
+    .brand .icon{font-size:20px}
+    .nav-links{display:flex;gap:12px;align-items:center}
+    .nav-links a{color:#cfeff8;text-decoration:none;padding:8px 12px;border-radius:8px;font-weight:600}
+    .nav-links a:hover{background:rgba(255,255,255,0.03);color:var(--accent)}
+    /* main card */
+    .card{display:grid;grid-template-columns:1fr 420px;gap:28px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:28px;border-radius:var(--card-radius);box-shadow:0 18px 60px rgba(2,6,23,0.6)}
+    @media (max-width:920px){ .card{grid-template-columns:1fr;}}
+    /* left panel (controls & instructions) */
+    .left h1{margin:0;color:var(--accent);font-size:28px}
+    .lead{color:var(--muted);margin:8px 0 20px}
+    .controls{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+    .file-btn{position:relative;display:inline-block;overflow:hidden}
+    .file-input{opacity:0;position:absolute;left:0;top:0;width:100%;height:100%;cursor:pointer}
+    .big-btn{background:linear-gradient(90deg,var(--accent),#4cc2ff);color:#031018;border:none;padding:14px 20px;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 12px 30px rgba(0,212,255,0.08);display:inline-flex;align-items:center;gap:10px}
+    .secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:#dff7ff;padding:12px 16px;border-radius:12px;cursor:pointer}
+    .muted-note{color:var(--muted);margin-top:12px;font-size:0.95rem}
+    /* clear icons & large labels for illiterate users */
+    .action-grid{display:flex;gap:12px;align-items:center;margin-top:18px}
+    .action-tile{background:rgba(255,255,255,0.02);border-radius:12px;padding:14px 18px;min-width:140px;text-align:center}
+    .action-tile .emoji{font-size:30px;display:block;margin-bottom:8px}
+    .action-tile .label{font-weight:700}
+    /* right panel (3D assistant + output) */
+    .right{display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center}
+    .assistant-frame{width:100%;height:320px;border-radius:12px;background:linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.25));display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+    canvas#threeCanvas{width:100%;height:100%;display:block}
+    .assistant-bubble{position:absolute;left:16px;bottom:18px;background:rgba(0,0,0,0.5);backdrop-filter:blur(6px);padding:10px 14px;border-radius:12px;color:#dff7ff;border:1px solid rgba(0,212,255,0.06);max-width:85%}
+    .assistant-bubble strong{display:block;color:var(--accent-2);font-weight:800}
+    .output-panel{width:100%;background:#071323;border-radius:12px;padding:14px;min-height:160px;box-shadow:0 8px 30px rgba(0,0,0,0.5);color:#c9f9ff}
+    .output-panel .filename{color:var(--accent);font-weight:700;margin-bottom:8px}
+    pre#output{margin:0;white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace;font-size:13px;max-height:240px;overflow:auto}
+    .status{font-size:0.95rem;color:var(--muted);margin-top:8px}
+    /* helper styles */
+    .hidden{display:none}
+    /* make big, easy to tap */
+    button, .action-tile, .big-btn{touch-action:manipulation}
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <div class="nav" role="navigation" aria-label="Main Navigation">
+    <div class="brand"><span class="icon">🗣️</span><span>Voice Agent</span></div>
+    <div class="nav-links">
+      <a href="{{ url_for('main_blueprint.index') }}">🏠 Home</a>
+      <a href="{{ url_for('main_blueprint.ocr_page') }}">📸 OCR Extractor</a>
+      <!-- add more routes as needed -->
+    </div>
+  </div>
+
+  <main class="container" role="main" aria-live="polite">
+    <div class="card" role="region" aria-label="OCR Extractor">
+      <!-- LEFT -->
+      <section class="left" aria-label="Controls">
+        <h1>🧠 OCR Text Extractor</h1>
+        <p class="lead">Upload the form or ID image. The assistant will extract text and show it clearly — big buttons and visual cues help users who can't read.</p>
+
+        <div class="controls" role="group" aria-label="File controls">
+          <label class="file-btn big-btn" aria-hidden="false">
+            📂 Choose Image
+            <input id="fileInput" class="file-input" type="file" accept="image/*" aria-label="Choose image file">
+          </label>
+
+          <button id="extractBtn" class="big-btn" title="Start OCR extraction" aria-label="Extract Text">🔍 Extract Text</button>
+
+          <button id="speakGuideBtn" class="secondary" aria-label="Read instructions">🔊 Read help</button>
+        </div>
+
+        <div class="muted-note">Tip: For structured extraction, place one <code>key=value</code> per line on the form (for example: <code>name=keshav</code>).</div>
+
+        <div class="action-grid" aria-hidden="false">
+          <div class="action-tile" role="button" tabindex="0" id="btnUpload">
+            <span class="emoji">📷</span>
+            <div class="label">Upload</div>
+          </div>
+          <div class="action-tile" role="button" tabindex="0" id="btnExtract">
+            <span class="emoji">🔎</span>
+            <div class="label">Extract</div>
+          </div>
+          <div class="action-tile" role="button" tabindex="0" id="btnSave">
+            <span class="emoji">💾</span>
+            <div class="label">Save</div>
+          </div>
+        </div>
+
+        <div class="status" id="status">Status: Idle</div>
+      </section>
+
+      <!-- RIGHT -->
+      <aside class="right" aria-label="Assistant and Results">
+        <div class="assistant-frame" aria-hidden="false">
+          <canvas id="threeCanvas"></canvas>
+          <div class="assistant-bubble" id="assistantBubble" aria-live="polite">
+            <strong>Assistant</strong>
+            <span id="assistantText">Hello — upload an image and press Extract.</span>
+          </div>
+        </div>
+
+        <div class="output-panel" role="region" aria-label="Extracted text">
+          <div class="filename" id="fileName">No file chosen</div>
+          <pre id="output">Upload an image and click <strong>Extract Text</strong>.</pre>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <script>
+    // ---------- UI elements ----------
+    const fileInput = document.getElementById('fileInput');
+    const extractBtn = document.getElementById('extractBtn');
+    const outputEl = document.getElementById('output');
+    const fileNameEl = document.getElementById('fileName');
+    const statusEl = document.getElementById('status');
+    const assistantText = document.getElementById('assistantText');
+    const assistantBubble = document.getElementById('assistantBubble');
+    const btnUpload = document.getElementById('btnUpload');
+    const btnExtract = document.getElementById('btnExtract');
+    const btnSave = document.getElementById('btnSave');
+    const speakGuideBtn = document.getElementById('speakGuideBtn');
+
+    // keyboard-friendly action tiles
+    [btnUpload, btnExtract, btnSave].forEach(el => {
+      el.addEventListener('click', () => el.id === 'btnUpload' ? fileInput.click() : (el.id === 'btnExtract' ? extractBtn.click() : alert('Save feature not implemented.')));
+      el.addEventListener('keypress', (e) => { if (e.key === 'Enter' || e.key === ' ') el.click(); });
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files && fileInput.files[0]) {
+        fileNameEl.textContent = fileInput.files[0].name;
+        assistantSay('Image selected. Press extract to start.');
+        statusEl.textContent = 'Status: File selected';
+      }
+    });
+
+    speakGuideBtn.addEventListener('click', () => assistantSay('Upload an image and press Extract Text. I will read out results after extraction.'));
+
+    // small helper for assistant bubble and optional speech
+    function setAssistant(txt, speak=false){
+      assistantText.textContent = txt;
+      // short flash animation
+      assistantBubble.animate([{ transform: 'translateY(6px)' }, { transform: 'translateY(0px)' }], { duration: 420, easing: 'ease-out' });
+      if (speak && 'speechSynthesis' in window) {
+        const u = new SpeechSynthesisUtterance(txt);
+        u.lang = 'en-IN';
+        speechSynthesis.speak(u);
+      }
+    }
+
+    function assistantSay(txt){ setAssistant(txt, true); }
+
+    // ---------- Three.js scene (floating orb assistant) ----------
+    let renderer, scene, camera, orb, lightA, animId;
+    const canvas = document.getElementById('threeCanvas');
+
+    function initThree(){
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      resize();
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+      camera.position.z = 3.2;
+
+      const geom = new THREE.SphereGeometry(0.68, 48, 48);
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0x00d4ff,
+        emissive: 0x003f4a,
+        metalness: 0.8,
+        roughness: 0.12,
+        envMapIntensity: 0.6,
+      });
+      orb = new THREE.Mesh(geom, mat);
+      scene.add(orb);
+
+      // soft glowing halo
+      const haloGeom = new THREE.SphereGeometry(0.9, 48, 48);
+      const haloMat = new THREE.MeshBasicMaterial({ color: 0x00d4ff, transparent:true, opacity:0.06 });
+      const halo = new THREE.Mesh(haloGeom, haloMat);
+      scene.add(halo);
+
+      lightA = new THREE.PointLight(0xb0f7ff, 1.2);
+      lightA.position.set(3,3,3);
+      scene.add(lightA);
+      const lightB = new THREE.AmbientLight(0x223344, 0.6);
+      scene.add(lightB);
+
+      animate();
+    }
+
+    function resize(){
+      const w = canvas.clientWidth || canvas.parentElement.clientWidth;
+      const h = canvas.clientHeight || 320;
+      renderer.setSize(w, h, false);
+      if (camera){ camera.aspect = w/h; camera.updateProjectionMatrix(); }
+    }
+
+    function animate(){
+      animId = requestAnimationFrame(animate);
+      const t = performance.now() * 0.001;
+      orb.rotation.y = t * 0.4;
+      orb.rotation.x = Math.sin(t*0.5) * 0.08;
+      lightA.position.x = Math.sin(t*0.6) * 3;
+      renderer.render(scene, camera);
+    }
+
+    function pulseAssistant(intensity=1.4){
+      // brief expansion then return
+      const start = { scale: 1 }, end = { scale: intensity };
+      const dur = 420;
+      const startTime = performance.now();
+      function frame(){
+        const now = performance.now(); const p = Math.min(1, (now - startTime)/dur);
+        const s = start.scale + (end.scale - start.scale) * (1 - Math.cos(p * Math.PI / 2));
+        orb.scale.set(s,s,s);
+        if (p < 1) requestAnimationFrame(frame); else orb.scale.set(1,1,1);
+      }
+      frame();
+    }
+
+    // init Three on demand to save resources
+    let threeInit = false;
+    function ensureThree(){ if (!threeInit){ initThree(); threeInit = true; } }
+
+    window.addEventListener('resize', () => { if (threeInit) resize(); });
+
+    // ---------- Upload + OCR fetch flow ----------
+    extractBtn.addEventListener('click', async () => {
+      const file = fileInput.files[0];
+      if (!file){
+        assistantSay('No image selected. Please upload an image first.');
+        statusEl.textContent = 'Status: No file selected';
+        return;
+      }
+
+      // ensure three is ready and animate assist
+      ensureThree();
+      pulseAssistant(1.35);
+      statusEl.textContent = 'Status: Uploading & extracting...';
+      setAssistant('Working on your image. Please wait...');
+
+      // show small animation (orb pulse)
+      pulseAssistant(1.6);
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const resp = await fetch('{{ url_for("main_blueprint.ocr_upload") }}', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!resp.ok){
+          // try to extract json error
+          let errText = `HTTP ${resp.status}`;
+          try { const j = await resp.json(); errText = j.error || j.message || errText; } catch(e){}
+          throw new Error(errText);
+        }
+
+        const data = await resp.json();
+        // adapt to your backend: if parsed_data key present, use it
+        if (data.parsed_data){
+          const parsed = data.parsed_data;
+          const lines = Object.entries(parsed).map(([k,v]) => `${k} = ${v}`);
+          outputEl.textContent = lines.join('\n');
+          setAssistant('Extraction complete. Displaying structured data.');
+        } else if (data.extracted_text !== undefined){
+          outputEl.textContent = data.extracted_text.trim() || '(no text found)';
+          setAssistant('Extraction finished. I displayed the text for you.');
+        } else {
+          // fallback: entire JSON
+          outputEl.textContent = JSON.stringify(data, null, 2);
+          setAssistant('Result received. Please review the output.');
+        }
+
+        statusEl.textContent = 'Status: Extraction finished';
+        pulseAssistant(1.18);
+
+      } catch (err){
+        outputEl.textContent = 'Error: ' + (err.message || err);
+        statusEl.textContent = 'Status: Error during extraction';
+        setAssistant('An error occurred while extracting. Please try again or upload a clearer image.');
+        console.error(err);
+      }
+    });
+
+    // optional accessibility: enter key triggers extract when file chosen
+    fileInput.addEventListener('keydown', (e)=>{ if (e.key === 'Enter') extractBtn.click(); });
+
+    // start with a friendly assistant message
+    setTimeout(()=>{ setAssistant('Hello — upload an image and press Extract.'); }, 600);
+
+    // lazy-init three when assistant area scrolls into view (helpful on mobile)
+    const obsTarget = document.querySelector('.assistant-frame');
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(ent => { if (ent.isIntersecting){ ensureThree(); io.disconnect(); } });
+    }, { threshold: 0.25 });
+    io.observe(obsTarget);
+  </script>
+</body>
+</html>
