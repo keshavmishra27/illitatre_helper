@@ -14,13 +14,7 @@ db = SQLAlchemy()
 bcrypt = Bcrypt()
 
 def create_app(test_config=None):
-<<<<<<< HEAD
     env_path = Path(__file__).resolve().parent.parent / ".env"
-=======
-    if os.path.exists(env_path):
-        load_dotenv(dotenv_path=env_path)
-
->>>>>>> ef9d26baacf6d894389dd57b0a97c24fd2105e1a
 
     if env_path.exists():
         load_dotenv(dotenv_path=env_path)
