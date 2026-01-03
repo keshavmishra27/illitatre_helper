@@ -13,8 +13,9 @@ db = SQLAlchemy()
 bcrypt = Bcrypt()
 
 def create_app(test_config=None):
-    env_path = Path(__file__).resolve().parent.parent / ".env"
-    load_dotenv(dotenv_path=env_path)
+    if os.path.exists(env_path):
+        load_dotenv(dotenv_path=env_path)
+
 
     app = Flask(__name__)
 
@@ -53,5 +54,6 @@ def create_app(test_config=None):
     # Initialize the database and create tables
     with app.app_context():
         db.create_all()
+
 
     return app
