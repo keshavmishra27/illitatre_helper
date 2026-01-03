@@ -8,15 +8,22 @@ from flask_bcrypt import Bcrypt
 from flask_cors import CORS
 import google.generativeai as genai
 
+
 # --- Initialize Extensions (Globally, unbound) ---
 db = SQLAlchemy()
 bcrypt = Bcrypt()
 
 def create_app(test_config=None):
     env_path = Path(__file__).resolve().parent.parent / ".env"
-    load_dotenv(dotenv_path=env_path)
 
-    app = Flask(__name__)
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path)
+
+    app = Flask(
+        __name__,
+        template_folder="templates",
+        static_folder="static"
+    )
 
     # --- Configuration ---
     app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "super_secret_123")
@@ -43,7 +50,7 @@ def create_app(test_config=None):
         app.config['GEMINI_API_KEY'] = api_key
     else:
         app.config['GEMINI_API_KEY'] = None
-        print("🟡 WARNING: GOOGLE_API_KEY not found. Gemini Cloud models disabled.")
+        print(" WARNING: GOOGLE_API_KEY not found. Gemini Cloud models disabled.")
 
     # --- Register Blueprints ---
     from . import models # Ensure models are imported before create_all

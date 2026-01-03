@@ -6,7 +6,7 @@ import re # Needed for simple parsing
 # --- OCR Configuration ---
 # NOTE: This line is required ONLY if Tesseract is not installed in your system's PATH.
 # If you are on Windows and installed Tesseract, uncomment and set the correct path:
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+#pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 
 def extract_text_from_image(uploaded_file):
