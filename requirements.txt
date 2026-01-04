@@ -1,31 +1,24 @@
-# Core Web Framework
-Flask==3.0.0
-gunicorn==21.2.0
+# Web framework
+Flask
+Flask-SQLAlchemy
+Flask-Bcrypt
+Flask-Cors
 
-# Database
-Flask-SQLAlchemy==3.1.1
-SQLAlchemy==2.0.25
-
-# LangChain & LLMs
-langchain==0.1.12
-langchain-community==0.0.29
-langchain-core==0.1.31
-langchain-ollama==0.1.2
-langchain-google-genai==0.0.8
-
-# Google Gemini
-google-generativeai==0.3.2
-
-# Language Detection
-langdetect==1.0.9
+# Server
+gunicorn
 
 # OCR
-pytesseract==0.3.10
-Pillow==10.2.0
+pytesseract
+Pillow
 
-# Speech (Text-to-Speech)
-gTTS==2.5.1
+# Speech
+gTTS
+langdetect
+
+# LangChain (LET PIP RESOLVE CORE)
+langchain==0.1.12
+langchain-community==0.0.29
+langchain-ollama
 
 # Utilities
-regex==2023.12.25
-requests==2.31.0
+requests
