@@ -7,7 +7,7 @@
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-  <style>s
+  <style>
     body {
       background-color: #0d1117;
       color: #ffffff;
@@ -37,10 +37,15 @@
       background-color: #30363d;
       align-self: flex-start;
     }
+    .error-msg {
+      background-color: #8b0000;
+      align-self: flex-start;
+    }
   </style>
 </head>
 
 <body>
+
 <nav class="navbar navbar-dark px-3">
   <span class="navbar-brand">🎙️ Voice Agent (Multilingual)</span>
   <a href="/ocr" class="btn btn-outline-light btn-sm">🧾 OCR Extractor</a>
@@ -67,12 +72,14 @@
     <hr>
 
     <h5 class="text-info text-center">Conversation Log</h5>
-    <div id="conversation" class="d-flex flex-column p-3"
+    <div id="conversation"
+         class="d-flex flex-column p-3"
          style="height:320px; overflow-y:auto; background:#0f141a; border-radius:10px;">
       <div class="conversation-bubble ai-msg">
         👋 Hello! Click “Start Speaking” and talk.
       </div>
     </div>
+
   </div>
 </div>
 
@@ -82,9 +89,12 @@
   const startBtn = document.getElementById("startBtn");
   const stopBtn = document.getElementById("stopBtn");
 
-  function addMessage(text, sender = "user") {
+  function addMessage(text, type = "ai") {
     const div = document.createElement("div");
-    div.className = `conversation-bubble ${sender === "ai" ? "ai-msg" : "user-msg"}`;
+    div.className = `conversation-bubble ${
+      type === "user" ? "user-msg" :
+      type === "error" ? "error-msg" : "ai-msg"
+    }`;
     div.innerText = text;
     conversationBox.appendChild(div);
     conversationBox.scrollTop = conversationBox.scrollHeight;
@@ -103,36 +113,22 @@
         body: formData
       });
 
-      const raw = await res.text();
-      let data;
-
-      try {
-        data = JSON.parse(raw);
-      } catch {
-        statusBubble.innerText = "⚠️ Server returned invalid response.";
-        return;
-      }
+      const data = await res.json();
 
       if (!res.ok) {
         statusBubble.innerText = "❌ " + (data.error || "Server error");
         return;
       }
 
-      /* 🔥 FIX FOR [object Object] 🔥 */
-      const spokenText =
-        typeof data.transcribed_text === "string"
-          ? data.transcribed_text
-          : data.transcribed_text.text;
+      statusBubble.innerText = "🗣️ You said: " + data.text;
 
-      statusBubble.innerText = "🗣️ You said: " + spokenText;
-
-      if (data.transcribed_text.language) {
-        detectedLang.innerText = data.transcribed_text.language;
+      if (data.language) {
+        detectedLang.innerText = data.language;
       }
 
     } catch (err) {
       console.error(err);
-      addMessage("❌ Network error while sending audio.", "ai");
+      statusBubble.innerText = "❌ Network error while sending audio.";
     }
   }
 
@@ -164,7 +160,7 @@
       addMessage("🎧 Listening...", "ai");
 
     } catch (err) {
-      addMessage("🎙️ Microphone access denied.", "ai");
+      addMessage("🎙️ Microphone access denied.", "error");
       startBtn.disabled = false;
       stopBtn.disabled = true;
     }
