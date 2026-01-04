@@ -22,7 +22,9 @@ os.environ["PATH"] += os.pathsep + os.path.dirname(FFMPEG_PATH)
 # Limit threads to avoid total CPU lock
 os.environ["OMP_NUM_THREADS"] = "2"
 os.environ["OPENBLAS_NUM_THREADS"] = "2"
-torch.set_num_threads(2)
+if torch is not None:
+    torch.set_num_threads(2)
+
 
 print(" FFmpeg path set to:", FFMPEG_PATH)
 print("OMP/OPENBLAS/Torch threads limited to 2")
@@ -111,5 +113,6 @@ def handle_uploaded_audio(file_bytes, lang_code=None):
         print("[Transcription ERROR]: No text returned")
         return None
     return result
+
 
 
