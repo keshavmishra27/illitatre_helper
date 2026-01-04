@@ -6,7 +6,11 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
-import google.generativeai as genai
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
+
 
 
 # --- Initialize Extensions (Globally, unbound) ---
@@ -63,3 +67,4 @@ def create_app(test_config=None):
 
 
     return app
+
