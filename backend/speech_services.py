@@ -10,7 +10,10 @@ except ImportError:
 from pathlib import Path
 
 # whisper import (vanilla whisper)
-import whisper
+try:
+    import whisper
+except ImportError:
+    whisper = None
 
 # FFmpeg path (same as before)
 FFMPEG_PATH = r"E:\ffmpeg-master-latest-win64-gpl\ffmpeg-master-latest-win64-gpl\bin\ffmpeg.exe"
@@ -108,4 +111,5 @@ def handle_uploaded_audio(file_bytes, lang_code=None):
         print("[Transcription ERROR]: No text returned")
         return None
     return result
+
 
