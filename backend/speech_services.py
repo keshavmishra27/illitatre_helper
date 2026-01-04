@@ -2,7 +2,11 @@ import os
 import tempfile
 import subprocess
 import warnings
-import torch
+try:
+    import torch
+except ImportError:
+    torch = None
+
 from pathlib import Path
 
 # whisper import (vanilla whisper)
@@ -104,3 +108,4 @@ def handle_uploaded_audio(file_bytes, lang_code=None):
         print("[Transcription ERROR]: No text returned")
         return None
     return result
+
