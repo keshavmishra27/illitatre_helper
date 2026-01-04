@@ -1,4 +1,5 @@
 import os
+IS_CLOUD = os.getenv("RENDER", "false").lower() == "true"
 import tempfile
 import subprocess
 import warnings
@@ -16,7 +17,7 @@ except ImportError:
     whisper = None
 
 # FFmpeg path (same as before)
-FFMPEG_PATH = r"E:\ffmpeg-master-latest-win64-gpl\ffmpeg-master-latest-win64-gpl\bin\ffmpeg.exe"
+FFMPEG_PATH = os.getenv("FFMPEG_PATH", "ffmpeg")
 os.environ["PATH"] += os.pathsep + os.path.dirname(FFMPEG_PATH)
 
 # Limit threads to avoid total CPU lock
@@ -104,14 +105,43 @@ def transcribe_audio_api(wav_bytes, lang_code=None, model_name="large"):
 # Full pipeline
 def handle_uploaded_audio(file_bytes, lang_code=None):
     print("[Audio received]:", len(file_bytes), "bytes")
+
+    # ---- CLOUD GUARD (Render / production) ----
+    IS_CLOUD = os.getenv("RENDER", "false").lower() == "true"
+    if IS_CLOUD:
+        print("[STT DISABLED]: Running on cloud deployment")
+        return {
+            "error": "Speech-to-text is disabled on cloud deployment. Please use local mode."
+        }
+
+    # ---- DEPENDENCY GUARD ----
+    if whisper is None or torch is None:
+        print("[STT ERROR]: Whisper or Torch not available")
+        return {
+            "error": "Speech-to-text dependencies are not available in this environment."
+        }
+
+    # ---- AUDIO CONVERSION ----
     wav_data = convert_to_wav(file_bytes)
     if not wav_data:
         print("[Conversion ERROR]: Could not convert WebM to WAV")
-        return None
-    result = transcribe_audio_api(wav_data, lang_code=lang_code, model_name="large")
-    if not result:
+        return {
+            "error": "Audio conversion failed."
+        }
+
+    # ---- TRANSCRIPTION ----
+    result = transcribe_audio_api(
+        wav_data,
+        lang_code=lang_code,
+        model_name="large"
+    )
+
+    if not result or not result.get("text"):
         print("[Transcription ERROR]: No text returned")
-        return None
+        return {
+            "error": "Transcription failed."
+        }
+
     return result
 
 
