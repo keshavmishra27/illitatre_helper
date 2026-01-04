@@ -13,27 +13,17 @@ def index():
     return render_template('index.html', user=user_details)
 
 
-@main_blueprint.route("/chat_audio", methods=["POST"])
-def chat_audio():
-    if 'audio_file' not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
+@main_blueprint.route("/chat_text", methods=["POST"])
+def chat_text():
+    data = request.get_json()
+    text = data.get("text")
 
-    audio_file = request.files['audio_file']
-    audio_bytes = audio_file.read()
+    if not text:
+        return jsonify({"error": "No text received"}), 400
 
-    result = handle_uploaded_audio(audio_bytes, lang_code="en-IN")
-
-    # 🔑 If STT is disabled or failed
-    if result is None:
-        return jsonify({"error": "Transcription failed"}), 400
-
-    if isinstance(result, dict) and "error" in result:
-        return jsonify(result), 400
-
-    # ✅ Successful transcription
+    # Call your agent / LLM here if needed
     return jsonify({
-        "text": result["text"],
-        "language": result.get("language")
+        "text": text
     })
 
 
