@@ -49,9 +49,11 @@ def create_app(test_config=None):
 
     # Configure Gemini API (Hybrid setup)
     api_key = os.getenv("GOOGLE_API_KEY")
-    if api_key:
+
+    if api_key and genai:
         genai.configure(api_key=api_key)
-        app.config['GEMINI_API_KEY'] = api_key
+        app.config["GEMINI_API_KEY"] = api_key
+    
     else:
         app.config['GEMINI_API_KEY'] = None
         print(" WARNING: GOOGLE_API_KEY not found. Gemini Cloud models disabled.")
@@ -67,4 +69,5 @@ def create_app(test_config=None):
 
 
     return app
+
 
